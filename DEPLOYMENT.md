@@ -1,206 +1,352 @@
 # TinLearn Deployment Guide
 
 ## Prerequisites
+- GitHub account
+- Vercel account (for frontend)
+- Railway or Render account (for backend)
+- Supabase project (already set up)
+- Groq API key (already obtained)
 
-1. Supabase account (https://supabase.com)
-2. Google Cloud account for Gemini API (https://ai.google.dev)
-3. GitHub OAuth App (https://github.com/settings/developers)
-4. Google OAuth credentials (https://console.cloud.google.com)
-5. Vercel account (https://vercel.com)
-6. Railway account (https://railway.app)
+---
 
-## Step 1: Database Setup (Supabase)
+## Part 1: Deploy Backend to Railway
 
-1. Create a new Supabase project
-2. Go to SQL Editor
-3. Copy and paste the entire contents of `database/schema.sql`
-4. Execute the SQL to create all tables, policies, and functions
-5. Go to Authentication > Providers
-6. Enable Google OAuth and GitHub OAuth
-7. Add your OAuth credentials
-8. Set redirect URLs:
-   - Development: `http://localhost:3000/auth/callback`
-   - Production: `https://your-domain.vercel.app/auth/callback`
+### Step 1: Prepare Backend for Deployment
 
-## Step 2: Get API Keys
+1. **Ensure backend/package.json has correct start script**:
+   ```json
+   "scripts": {
+     "start": "node src/server.js",
+     "dev": "nodemon src/server.js"
+   }
+   ```
 
-### Gemini API Key
-1. Go to https://ai.google.dev
-2. Click "Get API Key"
-3. Create a new API key
-4. Copy the key
+### Step 2: Push Code to GitHub
 
-### GitHub OAuth
-1. Go to https://github.com/settings/developers
-2. Click "New OAuth App"
-3. Fill in:
-   - Application name: TinLearn
-   - Homepage URL: `http://localhost:3000` (dev) or your production URL
-   - Authorization callback URL: `http://localhost:3000/auth/callback`
-4. Copy Client ID and Client Secret
+1. **Initialize git repository** (if not already done):
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit - TinLearn EdTech Platform"
+   ```
 
-### Google OAuth
-1. Go to https://console.cloud.google.com
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Go to Credentials > Create Credentials > OAuth 2.0 Client ID
-5. Configure consent screen
-6. Create Web application credentials
-7. Add authorized redirect URIs: `http://localhost:3000/auth/callback`
-8. Copy Client ID and Client Secret
+2. **Create a new repository on GitHub** (https://github.com/new)
+   - Name it: `tinlearn-edtech`
+   - Don't initialize with README (you already have one)
 
-## Step 3: Local Development Setup
+3. **Push to GitHub**:
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/tinlearn-edtech.git
+   git branch -M main
+   git push -u origin main
+   ```
 
-### Frontend
-```bash
-cd frontend
-cp .env.example .env.local
-# Edit .env.local with your actual values
-npm install
-npm run dev
-```
+### Step 3: Deploy Backend on Railway
 
-### Backend
-```bash
-cd backend
-cp .env.example .env
-# Edit .env with your actual values
-npm install
-npm run dev
-```
+1. **Go to Railway** (https://railway.app)
+   - Sign up/Login with GitHub
 
-Visit http://localhost:3000
+2. **Create New Project**:
+   - Click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your `tinlearn-edtech` repository
 
-## Step 4: Deploy Backend (Railway)
+3. **Configure Backend Service**:
+   - Railway will detect the backend folder
+   - Set **Root Directory**: `backend`
+   - Set **Start Command**: `node src/server.js`
 
-1. Push your code to GitHub
-2. Go to https://railway.app
-3. Click "New Project" > "Deploy from GitHub repo"
-4. Select your repository
-5. Railway will auto-detect the backend
-6. Add environment variables:
-   - SUPABASE_URL
-   - SUPABASE_SERVICE_ROLE_KEY
-   - GEMINI_API_KEY
-   - PORT (Railway will set this automatically)
-   - FRONTEND_URL (your Vercel URL after deployment)
-7. Deploy
-8. Copy the generated Railway URL (e.g., `https://your-app.railway.app`)
+4. **Add Environment Variables**:
+   Go to Variables tab and add:
+   ```
+   SUPABASE_URL=https://efifqfbozmpzoloxifsyk.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWZxZmJvem1wem9sb3hpZnN5ayIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3MzI4OTI1MTUsImV4cCI6MjA0ODQ2ODUxNX0.atUBJ31W_svUORAtLR84tVDmm-u3E2Lvo6quoJ1ewKI
+   GROQ_API_KEY=your_groq_api_key
+   PORT=4001
+   FRONTEND_URL=https://your-app.vercel.app
+   NODE_ENV=production
+   ```
 
-## Step 5: Deploy Frontend (Vercel)
+5. **Deploy**:
+   - Railway will automatically deploy
+   - Copy your backend URL (e.g., `https://tinlearn-backend.up.railway.app`)
 
-1. Go to https://vercel.com
-2. Click "New Project"
-3. Import your GitHub repository
-4. Configure:
-   - Framework Preset: Next.js
-   - Root Directory: `frontend`
-5. Add environment variables:
-   - NEXT_PUBLIC_SUPABASE_URL
-   - NEXT_PUBLIC_SUPABASE_ANON_KEY
-   - SUPABASE_SERVICE_ROLE_KEY
-   - NEXTAUTH_SECRET (generate with `openssl rand -base64 32`)
-   - GITHUB_CLIENT_ID
-   - GITHUB_CLIENT_SECRET
-   - GOOGLE_CLIENT_ID
-   - GOOGLE_CLIENT_SECRET
-   - NEXT_PUBLIC_BACKEND_URL (your Railway URL)
-6. Deploy
-7. Copy your Vercel URL
+---
 
-## Step 6: Update OAuth Redirect URLs
+## Part 2: Deploy Frontend to Vercel
 
-### Supabase
-1. Go to Authentication > URL Configuration
-2. Add your Vercel URL to Site URL
-3. Add redirect URL: `https://your-vercel-url.vercel.app/auth/callback`
+### Step 1: Prepare Frontend
 
-### GitHub OAuth
-1. Go to your OAuth App settings
-2. Update Homepage URL and Authorization callback URL with your Vercel URL
+Make sure your code is pushed to GitHub (done in Part 1).
 
-### Google OAuth
-1. Go to your OAuth credentials
-2. Add your Vercel URL to Authorized JavaScript origins
-3. Add callback URL to Authorized redirect URIs
+### Step 2: Deploy to Vercel
 
-## Step 7: Update Backend CORS
+1. **Go to Vercel** (https://vercel.com)
+   - Sign up/Login with GitHub
 
-In Railway, update the FRONTEND_URL environment variable to your Vercel URL.
+2. **Import Project**:
+   - Click "Add New" → "Project"
+   - Import your `tinlearn-edtech` repository
+   - Vercel will detect Next.js
 
-## Step 8: Test Production
+3. **Configure Project**:
+   - **Framework Preset**: Next.js (auto-detected)
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build` (auto-detected)
+   - **Output Directory**: `.next` (auto-detected)
 
-1. Visit your Vercel URL
-2. Test OAuth login with Google and GitHub
-3. Create a roadmap
-4. Test all features
+4. **Add Environment Variables**:
+   Click "Environment Variables" and add:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://efifqfbozmpzoloxifsyk.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmaWZxZmJvem1wem9sb3hpZnN5ayIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzMyODkyNTE1LCJleHAiOjIwNDg0Njg1MTV9._GvVfVlUt3UJtmyvATffdT0reuwE7lVIQ_lADWumVqU
+   NEXT_PUBLIC_BACKEND_URL=https://your-backend.up.railway.app
+   NEXTAUTH_SECRET=generate_random_string_here
+   NEXTAUTH_URL=https://your-app.vercel.app
+   ```
 
-## Monitoring
+   **To generate NEXTAUTH_SECRET**, run in terminal:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
 
-### Vercel
-- View deployment logs in Vercel dashboard
-- Monitor function execution times
-- Check analytics
+5. **Deploy**:
+   - Click "Deploy"
+   - Vercel will build and deploy your app
+   - You'll get a URL like `https://tinlearn-edtech.vercel.app`
 
-### Railway
-- View backend logs in Railway dashboard
-- Monitor resource usage
-- Check API response times
+### Step 3: Update Backend CORS
 
-### Supabase
-- Monitor database queries in Supabase dashboard
-- Check auth logs
-- Review API usage
+1. **Go back to Railway** and update `FRONTEND_URL`:
+   ```
+   FRONTEND_URL=https://tinlearn-edtech.vercel.app
+   ```
+   (Replace with your actual Vercel URL)
+
+2. **Redeploy backend** (Railway will auto-redeploy on variable change)
+
+---
+
+## Part 3: Post-Deployment Testing
+
+### Test Checklist:
+- [ ] Frontend loads at Vercel URL
+- [ ] Backend is accessible at Railway URL
+- [ ] Click on a domain - content generates successfully
+- [ ] Create a roadmap - AI generates modules
+- [ ] Test AI mentor chat
+- [ ] Check browser console for errors
+- [ ] Test on mobile device
+
+---
+
+## Part 4: Configure Custom Domain (Optional)
+
+### On Vercel:
+1. Go to Project Settings → Domains
+2. Add your custom domain (e.g., `tinlearn.com`)
+3. Follow DNS configuration instructions
+4. Update `NEXTAUTH_URL` environment variable
+
+### On Railway:
+1. Go to Settings → Networking
+2. Add custom domain for backend API
+3. Update DNS records as instructed
+4. Update `NEXT_PUBLIC_BACKEND_URL` in Vercel
+
+---
+
+## Alternative: Deploy Backend to Render
+
+If you prefer Render over Railway:
+
+1. **Go to Render** (https://render.com)
+2. **Create New Web Service**:
+   - Connect GitHub repository
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node src/server.js`
+   - **Environment**: Node
+3. **Add Environment Variables** (same as Railway)
+4. **Deploy**
+5. Copy Render URL and use it in Vercel's `NEXT_PUBLIC_BACKEND_URL`
+
+---
 
 ## Troubleshooting
 
-### OAuth not working
-- Verify redirect URLs match exactly
-- Check that OAuth credentials are correct
-- Ensure Supabase auth providers are enabled
+### Frontend Build Fails on Vercel
+- Check Vercel build logs for specific errors
+- Verify all dependencies are in `frontend/package.json`
+- Ensure environment variables are set correctly
+- Try building locally: `cd frontend && npm run build`
 
-### API errors
-- Check Railway logs for backend errors
-- Verify environment variables are set correctly
-- Ensure Gemini API key is valid and has quota
+### Backend Deployment Fails
+- Check Railway/Render logs for errors
+- Verify `package.json` has correct start script
+- Ensure all environment variables are set
+- Test locally: `cd backend && npm start`
 
-### Database errors
-- Verify RLS policies are set up correctly
-- Check that SQL functions were created
-- Ensure service role key has proper permissions
+### CORS Errors
+- Verify `FRONTEND_URL` in backend matches your Vercel URL exactly
+- Check backend logs for CORS-related errors
+- Ensure no trailing slash in URLs
 
-## Performance Optimization
+### API Calls Failing (404/500 errors)
+- Verify `NEXT_PUBLIC_BACKEND_URL` is correct in Vercel
+- Check backend is running: visit `https://your-backend.railway.app`
+- Verify Groq API key is valid
+- Check Railway logs for API errors
 
-1. Enable Vercel Edge Functions for faster response times
-2. Use Vercel Image Optimization for avatars
-3. Enable Railway autoscaling for backend
-4. Set up Supabase connection pooling
-5. Add Redis caching layer (optional)
+### Content Not Generating
+- Verify Groq API key is set correctly
+- Check Groq console for rate limits
+- Review backend logs for AI API errors
+- Test Groq API key directly at https://console.groq.com
+
+---
+
+## Environment Variables Reference
+
+### Backend (Railway/Render):
+```env
+SUPABASE_URL=https://efifqfbozmpzoloxifsyk.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GROQ_API_KEY=your_groq_api_key
+PORT=4001
+FRONTEND_URL=https://your-app.vercel.app
+NODE_ENV=production
+```
+
+### Frontend (Vercel):
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://efifqfbozmpzoloxifsyk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_BACKEND_URL=https://your-backend.railway.app
+NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_URL=https://your-app.vercel.app
+```
+
+---
+
+## Monitoring & Maintenance
+
+### Railway Dashboard:
+- Monitor backend logs in real-time
+- Check CPU and memory usage
+- View deployment history
+- Set up usage alerts
+
+### Vercel Dashboard:
+- View deployment logs and build times
+- Check function execution times
+- Monitor bandwidth usage
+- Review analytics data
+
+### Supabase Dashboard:
+- Monitor database queries and performance
+- Check API usage and rate limits
+- Review authentication logs
+- Track storage usage
+
+### Groq Console:
+- Track API usage and requests
+- Monitor rate limits
+- Check for errors or issues
+
+---
+
+## Cost Breakdown
+
+### Free Tier Limits:
+- **Vercel**: 100GB bandwidth, unlimited deployments
+- **Railway**: $5 free credit monthly (then ~$5-10/month)
+- **Render**: Free tier with 750 hours/month
+- **Supabase**: 500MB database, 2GB bandwidth, 50K MAU
+- **Groq**: Free tier with generous limits
+
+### Estimated Monthly Cost:
+- **Development/Small Scale**: $0-5/month
+- **Medium Scale**: $10-20/month
+- **Production Scale**: $30-50/month
+
+---
+
+## Performance Optimization Tips
+
+1. **Enable Vercel Edge Functions** for faster API routes
+2. **Use Vercel Image Optimization** for profile images
+3. **Enable Railway autoscaling** for backend
+4. **Implement caching** for frequently accessed data
+5. **Use CDN** for static assets
+6. **Optimize database queries** in Supabase
+7. **Add Redis** for session management (optional)
+
+---
 
 ## Security Checklist
 
-- [ ] All environment variables are set
-- [ ] OAuth redirect URLs are whitelisted
-- [ ] Supabase RLS policies are enabled
-- [ ] Rate limiting is configured
-- [ ] CORS is properly configured
+- [ ] All environment variables are set correctly
 - [ ] API keys are not exposed in frontend code
+- [ ] CORS is properly configured
 - [ ] HTTPS is enforced on all endpoints
+- [ ] Supabase RLS policies are enabled
+- [ ] Rate limiting is configured on backend
+- [ ] OAuth redirect URLs are whitelisted
+- [ ] Database backups are enabled
 
-## Cost Estimates
+---
 
-- Supabase: Free tier (up to 500MB database, 50,000 monthly active users)
-- Vercel: Free tier (100GB bandwidth, unlimited deployments)
-- Railway: $5/month (512MB RAM, 1GB storage)
-- Google Gemini API: Free tier (60 requests per minute)
+## Next Steps After Deployment
 
-Total: ~$5/month for small to medium traffic
+1. ✅ Set up custom domain
+2. ✅ Configure SSL certificates (auto on Vercel/Railway)
+3. ✅ Set up monitoring and alerts
+4. ✅ Configure database backups
+5. ✅ Add analytics (Vercel Analytics, Google Analytics)
+6. ✅ Set up error tracking (Sentry)
+7. ✅ Implement rate limiting
+8. ✅ Add user feedback system
+9. ✅ Create admin dashboard
+10. ✅ Set up CI/CD pipeline
 
-## Scaling Considerations
+---
 
-When you reach limits:
-1. Upgrade Supabase to Pro ($25/month) for more database capacity
-2. Upgrade Vercel to Pro ($20/month) for more bandwidth
-3. Scale Railway resources as needed
-4. Consider implementing caching with Redis
-5. Add CDN for static assets
+## Support Resources
+
+- **Vercel Docs**: https://vercel.com/docs
+- **Railway Docs**: https://docs.railway.app
+- **Render Docs**: https://render.com/docs
+- **Supabase Docs**: https://supabase.com/docs
+- **Groq Docs**: https://console.groq.com/docs
+- **Next.js Docs**: https://nextjs.org/docs
+
+---
+
+## Quick Deploy Commands
+
+```bash
+# 1. Push to GitHub
+git add .
+git commit -m "Ready for deployment"
+git push
+
+# 2. Generate NEXTAUTH_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# 3. Test production build locally
+cd frontend && npm run build && npm start
+cd backend && npm start
+
+# 4. Deploy
+# - Go to Railway and deploy backend
+# - Go to Vercel and deploy frontend
+# - Update environment variables
+# - Test live site
+```
+
+---
+
+**Deployment Complete! 🚀**
+
+Your TinLearn EdTech platform is now live and ready for students worldwide!

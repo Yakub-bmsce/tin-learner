@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ type Message = {
   timestamp: Date;
 };
 
-export default function MentorPage() {
+function MentorChat() {
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -237,5 +237,17 @@ export default function MentorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MentorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading AI Mentor...</div>
+      </div>
+    }>
+      <MentorChat />
+    </Suspense>
   );
 }
