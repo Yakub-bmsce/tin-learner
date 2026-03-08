@@ -1,0 +1,199 @@
+const express = require('express');
+const router = express.Router();
+const { model } = require('../config/gemini');
+const supabase = require('../config/supabase');
+
+// Generate roadmap with streaming
+router.post('/generate', async (req, res) => {
+  const { userId, mode, domain, jobDescription, experienceLevel, language } = req.body;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const goalInput = mode === 'domain' ? `Learn ${domain}` : jobDescription;
+    const actualDomain = mode === 'domain' ? domain : 'Custom Path';
+    const level = experienceLevel || 'Intermediate';
+    const lang = language || 'English';
+
+    // For demo mode, skip database operations
+    const roadmapId = userId ? null : 'demo-roadmap-' + Date.now();
+
+    if (userId && supabase) {
+      // Create roadmap entry for logged-in users
+      const { data: roadmapData, error: roadmapError } = await supabase
+        .from('roadmaps')
+        .insert({
+          user_id: userId,
+          domain: actualDomain,
+          goal_input: goalInput,
+        })
+        .select()
+        .single();
+
+      if (roadmapError) throw roadmapError;
+      res.write(`data: ${JSON.stringify({ roadmapId: roadmapData.id })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ roadmapId })}\n\n`);
+    }
+
+    // Generate roadmap with AI
+    const prompt = `You are an expert tech educator and career advisor with deep industry knowledge. Create a comprehensive, detailed learning roadmap for this goal: ${goalInput}
+
+Context:
+- Domain: ${actualDomain}
+- Experience Level: ${level}
+- Language: ${lang}
+
+Generate a structured learning roadmap as JSON with the following structure:
+{
+  "modules": [
+    {
+      "title": "Module title (clear and descriptive)",
+      "level": "Beginner|Intermediate|Advanced",
+      "description": "Comprehensive module description explaining what students will learn, why it's important, and how it connects to their goals (5-6 sentences minimum)",
+      "translated_description": "${lang !== 'English' ? `Full translation in ${lang}` : ''}",
+      "estimated_hours": 15,
+      "resources": [
+        {
+          "title": "Resource title",
+          "type": "video|article|docs|tutorial",
+          "url": "https://example.com",
+          "description": "What this resource covers"
+        }
+      ],
+      "mini_project": {
+        "title": "Hands-on project title",
+        "description": "Detailed project description with objectives, features to build, and learning outcomes (4-5 sentences)",
+        "expected_output": "Specific deliverables and what success looks like",
+        "skills_practiced": ["Skill 1", "Skill 2", "Skill 3"]
+      }
+    }
+  ]
+}
+
+Requirements:
+- Generate 8-10 comprehensive modules covering the complete learning journey
+- Progress from fundamentals to advanced topics
+- Each module should have 4-6 high-quality resources
+- Include practical mini-projects that build real skills
+- Make descriptions detailed and motivating
+- Ensure logical progression between modules
+- Include industry-relevant, modern content
+- Add specific, actionable learning objectives
+
+Make this roadmap inspiring and comprehensive enough for serious learners to achieve their goals.`;
+
+    const result = await model.generateContentStream(prompt);
+
+    let fullResponse = '';
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      fullResponse += text;
+      res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+    }
+
+    // Parse and save modules (only for logged-in users)
+    if (userId && supabase) {
+      try {
+        const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const roadmapJson = JSON.parse(jsonMatch[0]);
+          
+          // Insert modules
+          const modulesData = roadmapJson.modules.map((module, index) => ({
+            roadmap_id: roadmapId,
+            title: module.title,
+            description: module.description,
+            translated_description: module.translated_description || null,
+            order_index: index,
+            estimated_hours: module.estimated_hours,
+            difficulty: module.level,
+            resources: JSON.stringify(module.resources),
+            mini_project: JSON.stringify(module.mini_project),
+          }));
+
+          await supabase.from('roadmap_modules').insert(modulesData);
+
+          // Award XP and badge
+          await supabase.rpc('increment_xp', { user_id: userId, amount: 50 });
+          
+          const { data: existingBadge } = await supabase
+            .from('user_badges')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('badge_name', 'First Roadmap')
+            .single();
+
+          if (!existingBadge) {
+            await supabase.from('user_badges').insert({
+              user_id: userId,
+              badge_name: 'First Roadmap',
+            });
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing roadmap JSON:', parseError);
+      }
+    }
+
+    res.write(`data: [DONE]\n\n`);
+    res.end();
+  } catch (error) {
+    console.error('Error generating roadmap:', error);
+    res.write(`data: ${JSON.stringify({ error: 'Failed to generate roadmap' })}\n\n`);
+    res.end();
+  }
+});
+
+// Get roadmap by ID
+router.get('/:id', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(503).json({ error: 'Database not configured' });
+    }
+
+    const { data: roadmap } = await supabase
+      .from('roadmaps')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    const { data: modules } = await supabase
+      .from('roadmap_modules')
+      .select('*')
+      .eq('roadmap_id', req.params.id)
+      .order('order_index');
+
+    res.json({ roadmap, modules });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update module progress
+router.post('/:id/progress', async (req, res) => {
+  const { userId, moduleId, resourceIndex } = req.body;
+
+  try {
+    if (!supabase) {
+      return res.json({ success: true }); // Skip in demo mode
+    }
+
+    await supabase.from('module_progress').insert({
+      user_id: userId,
+      module_id: moduleId,
+      resource_index: resourceIndex,
+    });
+
+    // Award XP
+    await supabase.rpc('increment_xp', { user_id: userId, amount: 10 });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
