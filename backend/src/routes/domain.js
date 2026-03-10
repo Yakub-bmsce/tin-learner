@@ -9,68 +9,80 @@ router.post('/generate-content', async (req, res) => {
   console.log('🔥 Generating content for:', domainName);
 
   try {
-    const prompt = `You are an expert educator creating comprehensive learning content for ${domainName}. Generate detailed, in-depth educational content that will help students master this domain from beginner to advanced level.
+    const prompt = `You are an expert educator creating comprehensive learning content for ${domainName}. 
 
-Return a JSON object with this exact structure:
+CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no extra text. Just pure JSON.
+
+Generate this exact JSON structure:
 
 {
   "concepts": [
     {
       "title": "Concept title",
-      "description": "Comprehensive explanation with examples, use cases, and real-world applications (5-7 sentences minimum). Include why it's important and how it connects to other concepts."
+      "description": "Comprehensive explanation with examples and use cases (5-7 sentences)"
     }
   ],
   "quiz": [
     {
-      "question": "Detailed question that tests deep understanding",
+      "question": "Question text",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
-      "explanation": "Thorough explanation of why this answer is correct and why others are wrong (3-4 sentences)"
+      "explanation": "Why this answer is correct (2-3 sentences)"
     }
   ],
   "exercises": [
     {
       "title": "Exercise title",
-      "description": "Detailed step-by-step instructions, learning objectives, expected outcomes, and tips for success (4-5 sentences)",
-      "difficulty": "Beginner|Intermediate|Advanced"
+      "description": "Detailed instructions and learning objectives (4-5 sentences)",
+      "difficulty": "Beginner"
     }
   ],
   "projects": [
     {
       "title": "Project title",
-      "description": "Comprehensive project description including objectives, features to build, technologies to use, learning outcomes, and implementation guidance (6-8 sentences)",
+      "description": "Project description with objectives and features (5-6 sentences)",
       "duration": "2-3 weeks",
-      "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4"]
+      "skills": ["Skill 1", "Skill 2", "Skill 3"]
     }
   ]
 }
 
 Generate:
-- 8 fundamental concepts (cover basics to advanced topics)
-- 15 quiz questions (mix of easy, medium, and hard difficulty)
-- 8 hands-on exercises (progressive difficulty)
-- 5 real-world project ideas (from simple to complex)
+- 6 fundamental concepts
+- 10 quiz questions
+- 6 hands-on exercises
+- 4 project ideas
 
-Make content:
-- Highly detailed and educational
-- Include practical examples and use cases
-- Progressive from beginner to advanced
-- Industry-relevant and modern
-- Engaging and motivating for learners`;
+IMPORTANT: Ensure all JSON is valid. Escape quotes in strings. No trailing commas.`;
 
     console.log('📡 Calling AI API...');
     const result = await model.generateContent(prompt);
-    const response = result.response.text();
+    let response = result.response.text();
     console.log('✅ Got response from AI');
     
+    // Clean up response - remove markdown code blocks if present
+    response = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    // Try to extract JSON
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const content = JSON.parse(jsonMatch[0]);
-      console.log('✅ Content generated successfully');
-      res.json({ content });
+      try {
+        const content = JSON.parse(jsonMatch[0]);
+        console.log('✅ Content generated successfully');
+        res.json({ content });
+      } catch (parseError) {
+        console.error('❌ JSON parse error:', parseError.message);
+        console.error('Response preview:', response.substring(0, 500));
+        
+        // Return a fallback error with helpful message
+        res.status(500).json({ 
+          error: 'AI generated invalid JSON. Please try again.',
+          details: parseError.message 
+        });
+      }
     } else {
-      console.error('❌ Failed to parse JSON from response');
-      throw new Error('Failed to parse domain content');
+      console.error('❌ No JSON found in response');
+      throw new Error('Failed to extract JSON from AI response');
     }
   } catch (error) {
     console.error('❌ Error generating domain content:', error.message);
