@@ -9,17 +9,14 @@ export default function FreshStartPage() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [roadmap, setRoadmap] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{role: string, content: string}>>([
-    { role: 'assistant', content: 'Hi! 👋 I\'m here to help you start your tech journey. Ask me anything - I explain things in simple terms!' }
-  ]);
-  const [chatInput, setChatInput] = useState('');
 
   const handlePathSelect = async (path: string) => {
+    console.log('🎯 Path selected:', path);
     setSelectedPath(path);
     setLoading(true);
 
     try {
+      console.log('📡 Calling roadmap API...');
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roadmap/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,6 +29,7 @@ export default function FreshStartPage() {
         }),
       });
 
+      console.log('✅ Response received');
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullResponse = '';
@@ -48,9 +46,12 @@ export default function FreshStartPage() {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
               if (data === '[DONE]') {
+                console.log('✅ Roadmap generation complete');
                 const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
-                  setRoadmap(JSON.parse(jsonMatch[0]));
+                  const parsed = JSON.parse(jsonMatch[0]);
+                  console.log('✅ Roadmap parsed:', parsed);
+                  setRoadmap(parsed);
                 }
               } else {
                 try {
@@ -65,7 +66,8 @@ export default function FreshStartPage() {
         }
       }
     } catch (error) {
-      console.error('Error generating roadmap:', error);
+      console.error('❌ Error generating roadmap:', error);
+      alert('Failed to generate roadmap. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -314,63 +316,6 @@ export default function FreshStartPage() {
           </motion.div>
         )}
       </div>
-
-      {/* Floating Chat Bubble */}
-      {!showChat && (
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowChat(true)}
-          className="fixed bottom-8 right-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-full shadow-2xl z-50"
-        >
-          <MessageCircle size={32} />
-        </motion.button>
-      )}
-
-      {/* Chat Window */}
-      {showChat && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-8 right-8 w-96 bg-white rounded-3xl shadow-2xl z-50 overflow-hidden"
-        >
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 flex justify-between items-center">
-            <h3 className="font-bold">Beginner Helper 🤗</h3>
-            <button onClick={() => setShowChat(false)}>
-              <X size={24} />
-            </button>
-          </div>
-          <div className="h-96 overflow-y-auto p-4 space-y-4">
-            {chatMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-2xl ${
-                  msg.role === 'user' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
-                placeholder="Ask me anything..."
-                className="flex-1 px-4 py-2 rounded-full border-2 border-purple-300 focus:border-purple-500 outline-none"
-              />
-              <button
-                onClick={handleChatSend}
-                className="bg-purple-500 text-white px-6 py-2 rounded-full hover:bg-purple-600"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

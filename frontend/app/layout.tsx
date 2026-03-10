@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import GlobalChatbot from "@/components/GlobalChatbot";
 
 export const metadata: Metadata = {
   title: "TinLearn - Your Personalized Tech Learning Path",
@@ -21,7 +22,10 @@ export default function RootLayout({
         ></script>
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <GlobalChatbot />
+        </Providers>
       </body>
     </html>
   );
