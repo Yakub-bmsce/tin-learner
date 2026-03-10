@@ -73,60 +73,6 @@ export default function FreshStartPage() {
     }
   };
 
-  const handleChatSend = async () => {
-    if (!chatInput.trim()) return;
-
-    const userMsg = { role: 'user', content: chatInput };
-    setChatMessages(prev => [...prev, userMsg]);
-    setChatInput('');
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/mentor/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 'demo-user',
-          message: `I am a complete beginner with no tech knowledge. ${chatInput}`,
-          level: 'Beginner',
-          domain: 'General Tech',
-          language: 'English'
-        }),
-      });
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                setChatMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
-              } else {
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.content) {
-                    fullResponse += parsed.content;
-                  }
-                } catch (e) {}
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Chat error:', error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400">
       {/* Navbar */}
