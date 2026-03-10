@@ -10,6 +10,7 @@ const LEARNER_TYPES = [
     icon: '🌱',
     title: 'Fresh Start',
     description: 'New to tech and ready to begin',
+    link: '/domains/fresh-start',
   },
   {
     id: 'curious-explorer',
@@ -101,21 +102,35 @@ export default function DomainsPage() {
             </h2>
             <div className="grid md:grid-cols-4 gap-6">
               {LEARNER_TYPES.map((type) => (
-                <motion.button
-                  key={type.id}
-                  onClick={() => setSelectedLearner(type.id)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`glass-card p-6 rounded-2xl text-center cursor-pointer transition-all ${
-                    selectedLearner === type.id
-                      ? 'neon-border neon-glow bg-primary/20'
-                      : 'hover:bg-primary/10'
-                  }`}
-                >
-                  <div className="text-5xl mb-3">{type.icon}</div>
-                  <h3 className="font-bold text-lg mb-2 text-white">{type.title}</h3>
-                  <p className="text-sm text-gray-400">{type.description}</p>
-                </motion.button>
+                type.link ? (
+                  <Link key={type.id} href={type.link}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="glass-card p-6 rounded-2xl text-center cursor-pointer transition-all hover:bg-primary/10"
+                    >
+                      <div className="text-5xl mb-3">{type.icon}</div>
+                      <h3 className="font-bold text-lg mb-2 text-white">{type.title}</h3>
+                      <p className="text-sm text-gray-400">{type.description}</p>
+                    </motion.div>
+                  </Link>
+                ) : (
+                  <motion.button
+                    key={type.id}
+                    onClick={() => setSelectedLearner(type.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`glass-card p-6 rounded-2xl text-center cursor-pointer transition-all ${
+                      selectedLearner === type.id
+                        ? 'neon-border neon-glow bg-primary/20'
+                        : 'hover:bg-primary/10'
+                    }`}
+                  >
+                    <div className="text-5xl mb-3">{type.icon}</div>
+                    <h3 className="font-bold text-lg mb-2 text-white">{type.title}</h3>
+                    <p className="text-sm text-gray-400">{type.description}</p>
+                  </motion.button>
+                )
               ))}
             </div>
           </div>
