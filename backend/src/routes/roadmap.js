@@ -48,51 +48,50 @@ router.post('/generate', async (req, res) => {
     }
 
     // Generate roadmap with AI
-    const prompt = `You are an expert tech educator and career advisor with deep industry knowledge. Create a comprehensive, detailed learning roadmap for this goal: ${goalInput}
+    const prompt = `You are an expert tech educator. Create a learning roadmap for: ${goalInput}
+
+CRITICAL: You MUST respond with ONLY valid JSON. No markdown, no code blocks, no extra text.
 
 Context:
 - Domain: ${actualDomain}
 - Experience Level: ${level}
 - Language: ${lang}
 
-Generate a structured learning roadmap as JSON with the following structure:
+Generate this EXACT JSON structure (ensure all quotes and commas are correct):
 {
   "modules": [
     {
-      "title": "Module title (clear and descriptive)",
-      "level": "Beginner|Intermediate|Advanced",
-      "description": "Comprehensive module description explaining what students will learn, why it's important, and how it connects to their goals (5-6 sentences minimum)",
-      "translated_description": "${lang !== 'English' ? `Full translation in ${lang}` : ''}",
+      "title": "Module title",
+      "level": "Beginner",
+      "description": "Detailed description of what students will learn and why it matters",
       "estimated_hours": 15,
       "resources": [
         {
-          "title": "Resource title",
-          "type": "video|article|docs|tutorial",
+          "title": "Resource name",
+          "type": "video",
           "url": "https://example.com",
-          "description": "What this resource covers"
+          "description": "What this covers"
         }
       ],
       "mini_project": {
-        "title": "Hands-on project title",
-        "description": "Detailed project description with objectives, features to build, and learning outcomes (4-5 sentences)",
-        "expected_output": "Specific deliverables and what success looks like",
-        "skills_practiced": ["Skill 1", "Skill 2", "Skill 3"]
+        "title": "Project name",
+        "description": "What to build",
+        "expected_output": "What success looks like",
+        "skills_practiced": ["Skill 1", "Skill 2"]
       }
     }
   ]
 }
 
 Requirements:
-- Generate 8-10 comprehensive modules covering the complete learning journey
-- Progress from fundamentals to advanced topics
-- Each module should have 4-6 high-quality resources
-- Include practical mini-projects that build real skills
-- Make descriptions detailed and motivating
-- Ensure logical progression between modules
-- Include industry-relevant, modern content
-- Add specific, actionable learning objectives
+- Generate 6-8 modules
+- Each module has 3-4 resources
+- Progress from basics to advanced
+- Include hands-on projects
+- Make descriptions motivating and clear
+- ENSURE VALID JSON: no trailing commas, proper quotes, valid syntax
 
-Make this roadmap inspiring and comprehensive enough for serious learners to achieve their goals.`;
+Return ONLY the JSON object, nothing else.`;
 
     const result = await model.generateContentStream(prompt);
 
