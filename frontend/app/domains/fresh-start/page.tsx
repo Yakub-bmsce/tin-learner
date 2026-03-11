@@ -3,16 +3,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Sparkles, Heart, Zap, MessageCircle, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function FreshStartPage() {
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [roadmap, setRoadmap] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handlePathSelect = async (path: string) => {
     console.log('🎯 Path selected:', path);
-    setSelectedPath(path);
     setLoading(true);
 
     try {
@@ -77,29 +75,23 @@ export default function FreshStartPage() {
                   
                   const parsed = JSON.parse(jsonStr);
                   console.log('✅ Roadmap parsed:', parsed);
-                  setRoadmap(parsed);
+                  
+                  // Store in sessionStorage and navigate to roadmap page
+                  sessionStorage.setItem('freshStartRoadmap', JSON.stringify({
+                    path,
+                    roadmap: parsed,
+                    timestamp: Date.now()
+                  }));
+                  
+                  router.push('/roadmap/fresh-start');
                 } catch (e) {
                   console.error('❌ JSON parse error:', e);
                   console.log('Raw JSON:', jsonMatch[0].substring(0, 500));
-                  
-                  // Fallback: create a simple roadmap from the text
-                  setRoadmap({
-                    modules: [{
-                      title: 'Your Learning Path',
-                      description: 'We generated your roadmap! The detailed content is being processed. Please try again or check back later.',
-                      estimated_hours: 40
-                    }]
-                  });
+                  alert('Failed to parse roadmap. Please try again.');
                 }
               } else {
                 console.error('❌ No JSON found in response');
-                setRoadmap({
-                  modules: [{
-                    title: 'Getting Started',
-                    description: 'Your personalized roadmap is ready! We encountered a formatting issue, but your learning path has been created.',
-                    estimated_hours: 40
-                  }]
-                });
+                alert('No roadmap data received. Please try again.');
               }
             } else {
               try {
@@ -114,7 +106,7 @@ export default function FreshStartPage() {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error generating roadmap:', error);
       alert(`Failed to generate roadmap: ${error.message}`);
     } finally {
@@ -289,26 +281,6 @@ export default function FreshStartPage() {
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
             <p className="text-white text-xl">Creating your personalized roadmap...</p>
           </div>
-        )}
-
-        {/* Roadmap Display */}
-        {roadmap && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-8 shadow-2xl"
-          >
-            <h2 className="text-3xl font-bold mb-6 text-purple-600">Your Personalized Roadmap 🗺️</h2>
-            <div className="space-y-6">
-              {roadmap.modules?.map((module: any, index: number) => (
-                <div key={index} className="border-l-4 border-purple-500 pl-6 py-4">
-                  <h3 className="text-xl font-bold mb-2">{module.title}</h3>
-                  <p className="text-gray-700 mb-2">{module.description}</p>
-                  <p className="text-sm text-gray-500">⏱️ {module.estimated_hours} hours</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
         )}
       </div>
     </div>
