@@ -29,37 +29,61 @@ export default function FreshStartPage() {
         }),
       });
 
-      console.log('✅ Response received');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log('✅ Response received, status:', response.status);
       const reader = response.body?.getReader();
+      
+      if (!reader) {
+        throw new Error('No reader available');
+      }
+
       const decoder = new TextDecoder();
       let fullResponse = '';
+      let chunkCount = 0;
 
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.log('✅ Stream complete, total chunks:', chunkCount);
+          break;
+        }
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+        chunkCount++;
+        const chunk = decoder.decode(value);
+        console.log(`📦 Chunk ${chunkCount}:`, chunk.substring(0, 100));
+        const lines = chunk.split('\n');
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                console.log('✅ Roadmap generation complete');
-                const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              console.log('✅ Roadmap generation complete');
+              console.log('Full response length:', fullResponse.length);
+              const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
                   const parsed = JSON.parse(jsonMatch[0]);
                   console.log('✅ Roadmap parsed:', parsed);
                   setRoadmap(parsed);
+                } catch (e) {
+                  console.error('❌ JSON parse error:', e);
+                  alert('Failed to parse roadmap. Check console.');
                 }
               } else {
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.content) {
-                    fullResponse += parsed.content;
-                  }
-                } catch (e) {}
+                console.error('❌ No JSON found in response');
+                alert('No roadmap data received. Check console.');
+              }
+            } else {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  fullResponse += parsed.content;
+                }
+              } catch (e) {
+                console.log('Skipping non-JSON chunk');
               }
             }
           }
@@ -67,7 +91,7 @@ export default function FreshStartPage() {
       }
     } catch (error) {
       console.error('❌ Error generating roadmap:', error);
-      alert('Failed to generate roadmap. Check console for details.');
+      alert(`Failed to generate roadmap: ${error.message}`);
     } finally {
       setLoading(false);
     }
