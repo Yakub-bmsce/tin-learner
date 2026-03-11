@@ -10,6 +10,11 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Allow Fresh Start roadmap without authentication
+  if (req.nextUrl.pathname === '/roadmap/fresh-start') {
+    return res;
+  }
+
   // Protected routes that require authentication
   const protectedRoutes = ['/dashboard', '/generate', '/roadmap', '/profile', '/mentor'];
   const isProtectedRoute = protectedRoutes.some((route) =>
