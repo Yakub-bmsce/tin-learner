@@ -22,18 +22,27 @@ router.post('/generate', async (req, res) => {
 
     if (userId && supabase) {
       // Create roadmap entry for logged-in users
-      const { data: roadmapData, error: roadmapError } = await supabase
-        .from('roadmaps')
-        .insert({
-          user_id: userId,
-          domain: actualDomain,
-          goal_input: goalInput,
-        })
-        .select()
-        .single();
+      try {
+        const { data: roadmapData, error: roadmapError } = await supabase
+          .from('roadmaps')
+          .insert({
+            user_id: userId,
+            domain: actualDomain,
+            goal_input: goalInput,
+          })
+          .select()
+          .single();
 
-      if (roadmapError) throw roadmapError;
-      res.write(`data: ${JSON.stringify({ roadmapId: roadmapData.id })}\n\n`);
+        if (roadmapError) {
+          console.error('Supabase error, continuing without DB:', roadmapError);
+          res.write(`data: ${JSON.stringify({ roadmapId })}\n\n`);
+        } else {
+          res.write(`data: ${JSON.stringify({ roadmapId: roadmapData.id })}\n\n`);
+        }
+      } catch (dbError) {
+        console.error('Database connection failed, continuing without DB:', dbError.message);
+        res.write(`data: ${JSON.stringify({ roadmapId })}\n\n`);
+      }
     } else {
       res.write(`data: ${JSON.stringify({ roadmapId })}\n\n`);
     }
@@ -134,7 +143,7 @@ Make this roadmap inspiring and comprehensive enough for serious learners to ach
           }
         }
       } catch (parseError) {
-        console.error('Error parsing roadmap JSON:', parseError);
+        console.error('Error saving to database (continuing anyway):', parseError.message);
       }
     }
 
