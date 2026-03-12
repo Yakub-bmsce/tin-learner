@@ -2,6 +2,11 @@
 
 Your Personalized Tech Learning Path — Built by AI in Seconds
 
+## 🚀 Live Demo
+
+- **Website**: https://tin-learner-frontend.vercel.app
+- **Backend API**: https://tin-learner.onrender.com
+
 ## Tech Stack
 
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Framer Motion
@@ -9,7 +14,7 @@ Your Personalized Tech Learning Path — Built by AI in Seconds
 - **Database**: Supabase (PostgreSQL + Auth)
 - **AI**: Google Gemini API (gemini-1.5-flash)
 - **Auth**: Supabase Auth with Google OAuth + GitHub OAuth
-- **Deploy**: Vercel (frontend), Railway (backend)
+- **Deploy**: Vercel (frontend), Render (backend)
 
 ## Setup Instructions
 
@@ -72,10 +77,14 @@ Backend: http://localhost:4000
 ## Deployment
 
 ### Frontend (Vercel)
+Deployed at: https://tin-learner-frontend.vercel.app
+
 ```bash
 cd frontend
 vercel
 ```
 
-### Backend (Railway)
-Connect your GitHub repo to Railway and set environment variables.
+### Backend (Render)
+Deployed at: https://tin-learner.onrender.com
+
+Connect your GitHub repo to Render and set environment variables.
